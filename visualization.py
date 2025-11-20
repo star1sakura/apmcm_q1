@@ -104,9 +104,55 @@ def plot_share_comparison_pie():
     plt.savefig(IMG_DIR / "4_share_comparison_pie.png", dpi=300)
     plt.close()
 
+def plot_sensitivity_analysis():
+    print("Generating sensitivity analysis chart...")
+    sens_file = PRED_DIR / "sensitivity_analysis_sigma.csv"
+    if not sens_file.exists():
+        print("Sensitivity data not found, skipping...")
+        return
+
+    df = pd.read_csv(sens_file)
+    
+    plt.figure(figsize=(10, 6))
+    
+    # Plot US % Change vs Sigma
+    # Create a twin axis to show Share on right
+    ax1 = plt.gca()
+    
+    # Line 1: US Export Change % (Left Axis)
+    line1 = ax1.plot(df["sigma"], df["us_pct_change"] * 100, marker='o', linewidth=2.5, 
+             color='#d62728', label="US Export Change (%)")
+    ax1.set_xlabel("Substitution Elasticity ($\sigma$)", fontsize=12)
+    ax1.set_ylabel("US Export Volume Change (%)", color='#d62728', fontsize=12)
+    ax1.tick_params(axis='y', labelcolor='#d62728')
+    ax1.grid(True, linestyle='--', alpha=0.5)
+    
+    # Set y-limits to make them visually distinct if needed, or let them auto-scale
+    # Auto-scale is usually fine, but if they overlap perfectly, it means the relationship is linear.
+    # Let's force the right axis to start from 0 to see the share better.
+    
+    # Line 2: US Market Share (Right Axis)
+    ax2 = ax1.twinx()
+    line2 = ax2.plot(df["sigma"], df["us_share_new"] * 100, marker='s', linewidth=2.5, 
+             color='#1f77b4', linestyle='--', label="US New Market Share (%)")
+    ax2.set_ylabel("US New Market Share (%)", color='#1f77b4', fontsize=12)
+    ax2.tick_params(axis='y', labelcolor='#1f77b4')
+    ax2.set_ylim(0, 30) # Force scale to show share clearly (0-30%)
+    
+    # Combine legends
+    lines = line1 + line2
+    labels = [l.get_label() for l in lines]
+    ax1.legend(lines, labels, loc='center right')
+    
+    plt.title("Sensitivity Analysis: Impact of Elasticity ($\sigma$) on US Exports", fontsize=14)
+    plt.tight_layout()
+    plt.savefig(IMG_DIR / "5_sensitivity_sigma.png", dpi=300)
+    plt.close()
+
 if __name__ == "__main__":
     plot_historical_trends()
     plot_scenario_impact("prediction_results_scenario1.csv", "Scenario 1 (Tariff Only)", "3a")
     plot_scenario_impact("prediction_results_scenario2.csv", "Scenario 2 (Tariff + Price Adj)", "3b")
     plot_share_comparison_pie()
+    plot_sensitivity_analysis()
     print(f"\nAll images saved to {IMG_DIR}")

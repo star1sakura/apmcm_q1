@@ -228,5 +228,33 @@ def main():
     print(res2[cols].to_string(float_format="%.2f"))
     res2.to_csv(OUTPUT_DIR / "prediction_results_scenario2.csv", index=False)
 
+    # 4. Sensitivity Analysis (Sigma)
+    print("\nRunning Sensitivity Analysis on Sigma (Substitution Elasticity)...")
+    sigmas = [2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
+    sensitivity_records = []
+    
+    # Use Scenario 1 for sensitivity test
+    base_scenario = scenario_1
+    
+    for s in sigmas:
+        # Recalibrate with new sigma
+        p = calibrate_ces_for_china(china_imports, BASE_YEAR, s, eta, transport_costs)
+        # Run simulation
+        res = simulate_scenario_for_china(p, base_scenario)
+        
+        # Extract US change
+        us_res = res[res["exporter"] == "US"].iloc[0]
+        sensitivity_records.append({
+            "sigma": s,
+            "us_pct_change": us_res["pct_change_q"],
+            "us_share_new": us_res["share_new"],
+            "brazil_share_new": res[res["exporter"] == "Brazil"].iloc[0]["share_new"]
+        })
+    
+    df_sens = pd.DataFrame(sensitivity_records)
+    df_sens.to_csv(OUTPUT_DIR / "sensitivity_analysis_sigma.csv", index=False)
+    print(f"Sensitivity analysis saved to {OUTPUT_DIR / 'sensitivity_analysis_sigma.csv'}")
+    print(df_sens.to_string(float_format="%.4f"))
+
 if __name__ == "__main__":
     main()
