@@ -172,7 +172,7 @@ def main():
     # 2. Calibrate
     # Assumptions
     sigma = 4.0 # Substitution elasticity
-    eta = 0.3   # Demand elasticity
+    eta = 0.8   # Demand elasticity (higher to dampen total demand when prices rise)
     transport_costs = {"US": 20.0, "Brazil": 25.0, "Argentina": 23.0}
     
     print(f"Calibrating model to Base Year: {BASE_YEAR}")
@@ -303,6 +303,29 @@ def main():
     df_sens.to_csv(OUTPUT_DIR / "sensitivity_analysis_sigma.csv", index=False)
     print(f"Sensitivity analysis saved to {OUTPUT_DIR / 'sensitivity_analysis_sigma.csv'}")
     print(df_sens.to_string(float_format="%.4f"))
+
+    # 5. Sensitivity Analysis (Eta - Demand Elasticity)
+    print("\nRunning Sensitivity Analysis on Eta (Demand Elasticity)...")
+    etas = [0.1, 0.3, 0.5, 0.8, 1.0, 1.2]
+    eta_records = []
+    for e in etas:
+        # Recalibrate with current eta and baseline sigma
+        p = calibrate_ces_for_china(china_imports, BASE_YEAR, sigma, e, transport_costs)
+        res = simulate_scenario_for_china(p, base_scenario)
+        total_q0 = res["q0"].sum()
+        total_q_new = res["q_new"].sum()
+        total_pct_change = (total_q_new - total_q0) / total_q0
+        us = res[res["exporter"] == "US"].iloc[0]
+        eta_records.append({
+            "eta": e,
+            "total_pct_change_q": total_pct_change,
+            "us_pct_change_q": us["pct_change_q"],
+            "us_share_new": us["share_new"]
+        })
+    df_eta = pd.DataFrame(eta_records)
+    df_eta.to_csv(OUTPUT_DIR / "sensitivity_analysis_eta.csv", index=False)
+    print(f"Sensitivity analysis saved to {OUTPUT_DIR / 'sensitivity_analysis_eta.csv'}")
+    print(df_eta.to_string(float_format="%.4f"))
 
 if __name__ == "__main__":
     main()

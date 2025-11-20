@@ -114,7 +114,7 @@ def plot_sensitivity_analysis():
 
     df = pd.read_csv(sens_file)
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 6))
     
     # Plot US % Change vs Sigma
     # Create a twin axis to show Share on right
@@ -123,7 +123,7 @@ def plot_sensitivity_analysis():
     # Line 1: US Export Change % (Left Axis)
     line1 = ax1.plot(df["sigma"], df["us_pct_change"] * 100, marker='o', linewidth=2.5, 
              color='#d62728', label="US Export Change (%)")
-    ax1.set_xlabel("Substitution Elasticity ($\sigma$)", fontsize=12)
+    ax1.set_xlabel(r"Substitution Elasticity ($\sigma$)", fontsize=12)
     ax1.set_ylabel("US Export Volume Change (%)", color='#d62728', fontsize=12)
     ax1.tick_params(axis='y', labelcolor='#d62728')
     ax1.grid(True, linestyle='--', alpha=0.5)
@@ -143,11 +143,49 @@ def plot_sensitivity_analysis():
     # Combine legends
     lines = line1 + line2
     labels = [l.get_label() for l in lines]
-    ax1.legend(lines, labels, loc='center right')
+    ax1.legend(lines, labels, loc='upper left', bbox_to_anchor=(1.18, 1.0))
     
-    plt.title("Sensitivity Analysis: Impact of Elasticity ($\sigma$) on US Exports", fontsize=14)
-    plt.tight_layout()
-    plt.savefig(IMG_DIR / "5_sensitivity_sigma.png", dpi=300)
+    plt.title(r"Sensitivity Analysis: Impact of Elasticity ($\sigma$) on US Exports", fontsize=14)
+    plt.tight_layout(rect=[0, 0, 0.7, 1])
+    plt.savefig(IMG_DIR / "5_sensitivity_sigma.png", dpi=300, bbox_inches="tight")
+    plt.close()
+
+def plot_eta_sensitivity():
+    print("Generating eta sensitivity chart...")
+    sens_file = PRED_DIR / "sensitivity_analysis_eta.csv"
+    if not sens_file.exists():
+        print("Eta sensitivity data not found, skipping...")
+        return
+
+    df = pd.read_csv(sens_file)
+    # Ensure numeric dtypes to avoid plotting issues if CSV is read as strings
+    for col in ["eta", "total_pct_change_q", "us_pct_change_q", "us_share_new"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    plt.figure(figsize=(12, 6))
+    ax1 = plt.gca()
+
+    line_us = ax1.plot(df["eta"], df["us_pct_change_q"] * 100, marker='o', linewidth=2.5,
+                       color='#d62728', label="US Export Change (%)")
+    line_total = ax1.plot(df["eta"], df["total_pct_change_q"] * 100, marker='s', linewidth=2.5,
+                          color='#2ca02c', linestyle='--', label="Total Import Change (%)")
+    ax1.set_xlabel(r"Demand Elasticity ($\eta$)", fontsize=12)
+    ax1.set_ylabel("Volume Change (%)", fontsize=12)
+    ax1.grid(True, linestyle='--', alpha=0.5)
+
+    ax2 = ax1.twinx()
+    line_share = ax2.plot(df["eta"], df["us_share_new"] * 100, marker='^', linewidth=2.0,
+                          color='#1f77b4', linestyle='-.', label="US New Market Share (%)")
+    ax2.set_ylabel("US New Market Share (%)", color='#1f77b4', fontsize=12)
+    ax2.tick_params(axis='y', labelcolor='#1f77b4')
+
+    lines = line_us + line_total + line_share
+    labels = [l.get_label() for l in lines]
+    ax1.legend(lines, labels, loc='upper left', bbox_to_anchor=(1.18, 1.0))
+
+    plt.title(r"Sensitivity Analysis: Impact of Demand Elasticity ($\eta$)", fontsize=14)
+    plt.tight_layout(rect=[0, 0, 0.7, 1])
+    plt.savefig(IMG_DIR / "6_sensitivity_eta.png", dpi=300, bbox_inches="tight")
     plt.close()
 
 if __name__ == "__main__":
@@ -156,4 +194,5 @@ if __name__ == "__main__":
     plot_scenario_impact("prediction_results_scenario2.csv", "Scenario 2 (Tariff + Price Adj)", "3b")
     plot_share_comparison_pie()
     plot_sensitivity_analysis()
+    plot_eta_sensitivity()
     print(f"\nAll images saved to {IMG_DIR}")
