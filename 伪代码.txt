@@ -1,0 +1,491 @@
+（下面示例里用到的文件名、字段结构，都和你项目里的官方数据一致：`DataWeb-Query-Export.xlsx`、`DataWeb-Query-Import.xlsx`、`tariff_data_20xx.zip` 等。）
+
+---
+
+## 一、基础设置与工具函数
+
+```python
+import pandas as pd
+import numpy as np
+import zipfile
+from pathlib import Path
+```
+
+```python
+# 大豆相关 HTS8（美国税则）
+SOYBEAN_HTS8 = [
+    "12011000",  # Soybeans, seed
+    "12019000",  # Soybeans, other than seed
+    "12081000",  # Flours and meals of soybeans
+    "12089000",  # Other oilseed flours/meals
+    "15071000",  # Crude soybean oil
+    "15079020",  # Pharm-grade soybean oil
+    "15079040",  # Other soybean oil
+    "20089961",  # Prepared/preserved soybeans
+    "23040000",  # Oilcake/residues from soybeans
+]
+
+# 三个出口国
+EXPORTERS = ["US", "Brazil", "Argentina"]
+BASE_YEAR = 2024          # 基准年（政策前）
+YEARS = list(range(2020, 2025))   # 2020–2024
+```
+
+---
+
+## 二、读取并整理 DataWeb 年度贸易表（美国视角）
+
+### 2.1 清洗出口表（FAS Value）
+
+```python
+def load_us_export_data(export_xlsx_path: str) -> pd.DataFrame:
+    """
+    读取 DataWeb-Query-Export.xlsx 中的 'FAS Value' sheet，
+    清洗后返回长表：columns = [hts2, country, year, export_value]
+    """
+    df_raw = pd.read_excel(export_xlsx_path, sheet_name="FAS Value")
+    
+    # 第 0 行是 Data Row Count，第 1 行才是真正的表头
+    header = df_raw.iloc[1]
+    df = df_raw.iloc[2:].copy()
+    df.columns = header
+
+    # 统一列名
+    df = df.rename(columns={
+        "Data Type": "data_type",
+        "HTS Number": "hts2",
+        "Description": "description",
+        "Country": "country"
+    })
+
+    # 只保留 FAS Value 行
+    df = df[df["data_type"] == "FAS Value"]
+
+    # 把 2020–2025 这些年份列找出来
+    year_cols = [col for col in df.columns if isinstance(col, (int, float))]
+    # 有可能是 float(2025.0)，统一转成 int
+    df = df.melt(
+        id_vars=["hts2", "description", "country"],
+        value_vars=year_cols,
+        var_name="year",
+        value_name="export_value"
+    )
+    # year 转 int
+    df["year"] = df["year"].astype(int)
+    df["export_value"] = pd.to_numeric(df["export_value"], errors="coerce").fillna(0.0)
+
+    return df
+```
+
+### 2.2 清洗进口关税收入表（General Import Charges）
+
+```python
+def load_us_import_charges(import_xlsx_path: str) -> pd.DataFrame:
+    """
+    读取 DataWeb-Query-Import.xlsx 中的 'General Import Charges' sheet，
+    清洗后返回长表：columns = [hts2, country, year, import_charges]
+    """
+    df_raw = pd.read_excel(import_xlsx_path, sheet_name="General Import Charges")
+    
+    header = df_raw.iloc[1]
+    df = df_raw.iloc[2:].copy()
+    df.columns = header
+
+    df = df.rename(columns={
+        "Data Type": "data_type",
+        "HTS Number": "hts2",
+        "Description": "description",
+        "Country": "country"
+    })
+
+    df = df[df["data_type"] == "General Import Charges"]
+
+    year_cols = [col for col in df.columns if isinstance(col, (int, float))]
+    df = df.melt(
+        id_vars=["hts2", "description", "country"],
+        value_vars=year_cols,
+        var_name="year",
+        value_name="import_charges"
+    )
+    df["year"] = df["year"].astype(int)
+    df["import_charges"] = pd.to_numeric(df["import_charges"], errors="coerce").fillna(0.0)
+
+    return df
+```
+
+> 实际用问题一，只需要从这里拿到美国对中国的“12 章”（油籽类）出口额，作为大豆相关的一个参考背景。
+
+---
+
+## 三、读取并处理 Tariff Database（美国税率）
+
+### 3.1 从 zip 里取关税表并筛选大豆税目
+
+```python
+def load_tariff_for_year(zip_path: str) -> pd.DataFrame:
+    """
+    从 tariff_data_YYYY.zip 中读取 'tariff_database_*.xlsx'，
+    筛选大豆相关 HTS8 项，返回含关税字段的 DataFrame。
+    """
+    zip_path = Path(zip_path)
+    with zipfile.ZipFile(zip_path) as zf:
+        # 找到 xlsx 文件名（一般只有一个）
+        xlsx_name = [name for name in zf.namelist() if name.startswith("tariff_database") and name.endswith(".xlsx")][0]
+        with zf.open(xlsx_name) as f:
+            df = pd.read_excel(f)
+
+    # 只保留大豆相关税目
+    df = df[df["hts8"].astype(str).isin(SOYBEAN_HTS8)].copy()
+
+    return df
+```
+
+### 3.2 把不同 rate_type_code 统一成“从价税率”（简单版本）
+
+利用 Code Key 的规则，把 MFN 税率换算成 ad valorem：
+
+```python
+def compute_mfn_ad_val_equiv(row, unit_price_guess: float = 500.0) -> float:
+    """
+    输入一行关税记录，输出 MFN 的等价从价税率（0.05 表示 5%）。
+    unit_price_guess: 假设的 CIF 单价（美元/计量单位），
+    主要用于从量税 (cents/kg) 换算。
+    """
+    code = row["mfn_rate_type_code"]
+    ad = row["mfn_ad_val_rate"] or 0.0
+    spec = row["mfn_specific_rate"] or 0.0
+    other = row["mfn_other_rate"] or 0.0
+
+    # 0：Free
+    if code == 0:
+        return 0.0
+    # 7：纯从价
+    if code == 7:
+        return ad
+    
+    # 1,2,3,4,5,6：含从量税，全部粗略折算成 ad valorem
+    # 这里只写简单版本：tariff ≈ ad + specific / unit_price_guess
+    # 真实实现可以根据 Code Key 中的 Q1/Q2 分别处理
+    base_rate = ad
+    if code in (1, 3, 4, 6):   # 涉及 specific_rate * Q1
+        base_rate += spec / unit_price_guess
+    if code in (2, 3, 5, 6):   # 涉及 other_rate * Q2
+        base_rate += other / unit_price_guess
+    
+    return base_rate
+```
+
+### 3.3 汇总成“大豆平均 MFN 税率”
+
+```python
+def build_soybean_mfn_tariff_series(tariff_zip_dir: str, years: list[int]) -> pd.DataFrame:
+    """
+    对每一年，计算大豆相关 HTS8 项下的平均 MFN 税率，
+    返回 DataFrame: [year, hts8, mfn_rate]
+    """
+    records = []
+    for year in years:
+        zip_path = Path(tariff_zip_dir) / f"tariff_data_{year}.zip"
+        df = load_tariff_for_year(zip_path)
+
+        df["mfn_rate_equiv"] = df.apply(compute_mfn_ad_val_equiv, axis=1)
+        df["year"] = year
+
+        records.append(df[["year", "hts8", "brief_description", "mfn_rate_equiv"]])
+
+    result = pd.concat(records, ignore_index=True)
+    return result
+```
+
+> 这块是为了展示“美国对大豆及制品原本 MFN 非常低（大豆 0、油 19.1%、粕 1.9% 等）”，同时为后续构造“互惠关税”情景提供基准。
+
+---
+
+## 四、准备“中国自三国进口大豆”的基准数据
+
+这里会用到你自己整理好的“中国进口大豆数据”，结构建议做成：
+
+```text
+china_soy_imports.csv:
+
+year, exporter, quantity_tons, value_usd, p_fob, tariff_china
+2020, US,      ...,           ...,       ...,   ...
+2020, Brazil,  ...,           ...,       ...,   ...
+...
+2024, Argentina, ...,         ...,       ...,   ...
+```
+
+假设已经有了这个文件，我们写个读入函数：
+
+```python
+def load_china_soy_imports(path: str) -> pd.DataFrame:
+    """
+    读取你自己整理的中国自三国大豆进口数据，
+    要求至少包含 [year, exporter, quantity_tons, value_usd, p_fob, tariff_china] 六列。
+    """
+    df = pd.read_csv(path)
+    # 校验 & 补充
+    df = df[df["exporter"].isin(EXPORTERS)].copy()
+    df = df[df["year"].between(min(YEARS), max(YEARS))]
+    
+    # 若没给 p_fob，可用 value / quantity 近似
+    if "p_fob" not in df.columns or df["p_fob"].isna().any():
+        df["p_fob"] = df["value_usd"] / df["quantity_tons"]
+
+    return df
+```
+
+---
+
+## 五、标定 CES / Armington 模型（针对中国市场）
+
+### 5.1 标定函数
+
+```python
+def calibrate_ces_for_china(
+    china_df: pd.DataFrame,
+    base_year: int,
+    sigma: float,
+    eta: float,
+    transport_cost: dict[str, float] | None = None,
+):
+    """
+    根据基准年中国自三国大豆进口数据标定 CES 模型。
+    china_df: 至少包含 [year, exporter, quantity_tons, value_usd, p_fob, tariff_china]
+    sigma: 来源国之间替代弹性
+    eta: 中国大豆总需求对综合价格的弹性
+    transport_cost: 每个出口国的运费/其他成本 (USD/吨)，可选
+    """
+    if transport_cost is None:
+        transport_cost = {e: 0.0 for e in EXPORTERS}
+
+    # 取基准年数据
+    base = china_df[china_df["year"] == base_year].copy()
+
+    # 观测的对华进口总量与份额
+    base["cif_price"] = base["p_fob"] * (1 + base["tariff_china"]) + \
+                        base["exporter"].map(transport_cost)
+
+    Q0 = base["quantity_tons"].sum()
+    V0 = base["value_usd"].sum()
+
+    base["share_value"] = base["value_usd"] / V0  # s_i^0
+
+    # 标定 alpha_i
+    # 先算临时的 \tilde{alpha}_i = s_i^0 * (c_i^0)^{σ-1}
+    base["alpha_tilde"] = base["share_value"] * (base["cif_price"] ** (sigma - 1))
+    alpha_sum = base["alpha_tilde"].sum()
+    base["alpha"] = base["alpha_tilde"] / alpha_sum
+
+    # 计算基准价格指数 P_C^0
+    # P = ( Σ α_i c_i^{1-σ} )^{1/(1-σ)}
+    tmp = (base["alpha"] * (base["cif_price"] ** (1 - sigma))).sum()
+    P0 = tmp ** (1 / (1 - sigma))
+
+    # 标定 A_C
+    A_C = Q0 * (P0 ** eta)
+
+    # 把所有基准信息打包返回
+    params = {
+        "base_year": base_year,
+        "sigma": sigma,
+        "eta": eta,
+        "A_C": A_C,
+        "P0": P0,
+        "Q0": Q0,
+        "V0": V0,
+        "alpha_i": base.set_index("exporter")["alpha"].to_dict(),
+        "cif0_i": base.set_index("exporter")["cif_price"].to_dict(),
+        "p0_i": base.set_index("exporter")["p_fob"].to_dict(),
+        "q0_i": base.set_index("exporter")["quantity_tons"].to_dict(),
+        "share0_i": base.set_index("exporter")["share_value"].to_dict(),
+        "tariff0_i": base.set_index("exporter")["tariff_china"].to_dict(),
+        "transport_cost": transport_cost,
+    }
+
+    return params
+```
+
+---
+
+## 六、给定关税情景，求新的进口份额和出口量/额
+
+### 6.1 定义“关税情景”输入格式
+
+我们只需要告诉模型：**中国对三国大豆的新关税是多少**。
+
+```python
+# 示例：一个情景：对美国加 25 个百分点，对巴西、阿根廷不变
+tariff_scenario = {
+    "US":     {"delta_tariff": 0.25},   # 新关税 = 旧关税 + 0.25
+    "Brazil": {"delta_tariff": 0.0},
+    "Argentina": {"delta_tariff": 0.0},
+}
+```
+
+当然你也可以直接给“新关税绝对值”：
+
+```python
+tariff_scenario = {
+    "US": {"new_tariff": 0.30},  # 直接设为 30%
+    "Brazil": {"new_tariff": 0.03},
+    "Argentina": {"new_tariff": 0.03},
+}
+```
+
+### 6.2 仿真函数
+
+```python
+def simulate_scenario_for_china(params: dict, scenario: dict) -> pd.DataFrame:
+    """
+    在给定关税情景下，计算中国自三国的大豆进口量/额和份额。
+    params: calibrate_ces_for_china 的返回结果
+    scenario: dict[exporter] -> {"delta_tariff": x} 或 {"new_tariff": x}
+    返回 DataFrame: [exporter, q_new, V_new, share_new, tariff_new, price_cif_new]
+    """
+    sigma = params["sigma"]
+    eta = params["eta"]
+    A_C = params["A_C"]
+    alpha_i = params["alpha_i"]
+    p0_i = params["p0_i"]
+    transport_cost = params["transport_cost"]
+    tariff0_i = params["tariff0_i"]
+
+    # 计算各国的新关税、新到岸价
+    records = []
+    for exp in EXPORTERS:
+        base_tariff = tariff0_i[exp]
+        scen_info = scenario.get(exp, {})
+        if "new_tariff" in scen_info:
+            t_new = scen_info["new_tariff"]
+        else:
+            delta = scen_info.get("delta_tariff", 0.0)
+            t_new = base_tariff + delta
+
+        p_fob = p0_i[exp]
+        tau = transport_cost.get(exp, 0.0)
+        c_new = p_fob * (1 + t_new) + tau
+
+        records.append({
+            "exporter": exp,
+            "tariff_new": t_new,
+            "cif_price_new": c_new,
+        })
+
+    df = pd.DataFrame(records)
+
+    # 计算新的价格指数
+    def get_alpha(exp):
+        return alpha_i[exp]
+
+    df["alpha"] = df["exporter"].apply(get_alpha)
+    tmp = (df["alpha"] * (df["cif_price_new"] ** (1 - sigma))).sum()
+    P_new = tmp ** (1 / (1 - sigma))
+
+    # 总需求新水平
+    Q_new = A_C * (P_new ** (-eta))
+
+    # 新份额 s_i^S
+    numerator = df["alpha"] * (df["cif_price_new"] ** (1 - sigma))
+    df["share_new"] = numerator / numerator.sum()
+
+    # 新的进口量与出口额
+    df["q_new"] = df["share_new"] * Q_new
+    df["p_fob"] = df["exporter"].map(p0_i)
+    df["V_new"] = df["q_new"] * df["p_fob"]
+
+    # 把基准值也并到一起，方便比较
+    q0_i = params["q0_i"]
+    share0_i = params["share0_i"]
+    V0 = params["V0"]
+
+    df["q0"] = df["exporter"].map(q0_i)
+    df["share0"] = df["exporter"].map(share0_i)
+    df["V0"] = df["share0"] * V0
+
+    df["delta_q"] = df["q_new"] - df["q0"]
+    df["delta_V"] = df["V_new"] - df["V0"]
+    df["pct_change_q"] = df["delta_q"] / df["q0"]
+    df["pct_change_V"] = df["delta_V"] / df["V0"]
+
+    return df[[
+        "exporter",
+        "q0", "q_new", "delta_q", "pct_change_q",
+        "V0", "V_new", "delta_V", "pct_change_V",
+        "share0", "share_new",
+        "tariff_new", "cif_price_new"
+    ]]
+```
+
+---
+
+## 七、把所有步骤串起来（问题一的完整主程序骨架）
+
+```python
+def main():
+    # ===== 1. 读取美国贸易数据（可选：用于现状描述） =====
+    export_df = load_us_export_data("DataWeb-Query-Export.xlsx")
+    import_charges_df = load_us_import_charges("DataWeb-Query-Import.xlsx")
+
+    # 示例：抽取美国对中国的“12 章”出口（油籽类）
+    us_to_cn_oilseeds = export_df[
+        (export_df["hts2"] == "12") &
+        (export_df["country"] == "China") &
+        (export_df["year"].between(2020, 2024))
+    ].copy()
+    # 这部分可以画图描述“美国油籽（大豆）对华出口的趋势”
+
+    # ===== 2. 读取并分析美国大豆相关关税（用于情景设定） =====
+    soybean_mfn_series = build_soybean_mfn_tariff_series(
+        tariff_zip_dir=".",   # 你的 zip 文件所在目录
+        years=YEARS
+    )
+    # soybean_mfn_series 可用于展示：大豆/大豆油/豆粕 MFN 原本税率多低，
+    # 然后你再设定 2025 年“互惠关税”对这些项目的加征幅度。
+
+    # ===== 3. 读取中国自三国进口大豆的基准数据 =====
+    china_imports = load_china_soy_imports("china_soy_imports.csv")
+
+    # ===== 4. 标定 CES / Armington 模型 =====
+    sigma = 4.0    # 来源国替代弹性（你可以做敏感性分析）
+    eta = 0.3      # 中国大豆总需求对价格的弹性（绝对值一般比较小）
+
+    ces_params = calibrate_ces_for_china(
+        china_df=china_imports,
+        base_year=BASE_YEAR,
+        sigma=sigma,
+        eta=eta,
+        transport_cost={"US": 20.0, "Brazil": 25.0, "Argentina": 23.0}  # 举例
+    )
+
+    # ===== 5. 构造不同关税情景并仿真 =====
+    # 情景 A：中度反制——只对美国大豆加 25 个百分点
+    scenario_A = {
+        "US": {"delta_tariff": 0.25},
+        "Brazil": {"delta_tariff": 0.0},
+        "Argentina": {"delta_tariff": 0.0},
+    }
+    result_A = simulate_scenario_for_china(ces_params, scenario_A)
+    print("Scenario A results:")
+    print(result_A)
+
+    # 情景 B：高度反制——对美加 40 p.p.，并给巴西/阿根廷小幅优惠（减 3 p.p.）
+    scenario_B = {
+        "US": {"delta_tariff": 0.40},
+        "Brazil": {"delta_tariff": -0.03},
+        "Argentina": {"delta_tariff": -0.03},
+    }
+    result_B = simulate_scenario_for_china(ces_params, scenario_B)
+    print("Scenario B results:")
+    print(result_B)
+
+    # 你可以把 result_A, result_B 输出到 Excel 或画图，作为问题一的核心结果展示：
+    # - 三国对华出口量/额的变化
+    # - 三国在中国大豆进口中的份额重分配
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
