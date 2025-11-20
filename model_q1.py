@@ -174,9 +174,10 @@ def main():
     
     # 2. Calibrate
     # Assumptions (aligned to literature ranges: supply-price elasticity around 0.7-1.2, demand-price elasticity 0.3-0.8)
-    sigma = 3.0 # Substitution elasticity (moderate)
-    eta = 0.5   # Demand elasticity (mid in 0.3-0.8 band; short-run low-end 0.15 tested in sensitivity)
-    transport_costs = {"US": 20.0, "Brazil": 25.0, "Argentina": 23.0}
+    sigma = 3.0 # Substitution elasticity (moderate, literature mid-range)
+    eta = 0.5   # Demand elasticity (mid in 0.3-0.8 band; short-run 0.15 tested in sensitivity)
+    # Transport cost (USD/ton), aligned to reported logistics cost order: US < AR < BR (values scaled from literature)
+    transport_costs = {"US": 55.0, "Brazil": 103.0, "Argentina": 79.0}
     
     print(f"Calibrating model to Base Year: {BASE_YEAR}")
     params = calibrate_ces_for_china(
@@ -193,9 +194,10 @@ def main():
     scenario_1 = {
         "demand_shock": -0.08,  # overall demand contraction (e.g., tighter policy/uncertainty)
         "supply_caps": {
-            "Brazil": {"q_cap": params["q0_i"]["Brazil"] * 1.15, "markup": 0.10},  # 15% headroom, 10% markup if exceeded
-            "Argentina": {"q_cap": params["q0_i"]["Argentina"] * 1.15, "markup": 0.10},
-            # US cap omitted; tariff already curtails demand
+            # Caps based on plausible export ceilings (thousand tons -> converted to tons)
+            "Brazil": {"q_cap": 95_000_000, "markup": 0.10},
+            "Argentina": {"q_cap": 8_000_000, "markup": 0.10},
+            "US": {"q_cap": 60_000_000, "markup": 0.05},
         },
         "US": {"delta_tariff": 0.25},
         "Brazil": {"delta_tariff": 0.0},
@@ -266,8 +268,9 @@ def main():
     scenario_2 = {
         "demand_shock": -0.05,  # lighter contraction when US cuts price
         "supply_caps": {
-            "Brazil": {"q_cap": params["q0_i"]["Brazil"] * 1.10, "markup": 0.08},
-            "Argentina": {"q_cap": params["q0_i"]["Argentina"] * 1.10, "markup": 0.08},
+            "Brazil": {"q_cap": 95_000_000, "markup": 0.08},
+            "Argentina": {"q_cap": 8_000_000, "markup": 0.08},
+            "US": {"q_cap": 60_000_000, "markup": 0.05},
         },
         "US": {
             "delta_tariff": 0.25,

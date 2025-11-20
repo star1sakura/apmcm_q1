@@ -3,7 +3,8 @@ from pathlib import Path
 
 # Paths (relative to repo root)
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "external_data"
+# WITS data stored under external_data/wits
+DATA_DIR = BASE_DIR / "external_data" / "wits"
 OUTPUT_DIR = BASE_DIR / "output" / "external_cleaned"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_FILE = OUTPUT_DIR / "china_soy_imports.csv"
@@ -45,7 +46,8 @@ def process_data():
             # Brazil/Argentina: 3% (MFN)
             def get_tariff(exporter):
                 if exporter == "US":
-                    return 0.28
+                    # Use MFN 3% + recent 10% surcharge (per official notices), pre-scenario
+                    return 0.13
                 else:
                     return 0.03
             

@@ -7,6 +7,8 @@ Project for APMCM 2025 Problem C, Question 1. It cleans data, calibrates an Armi
 .
 ├── 2025 APMCM Problems C/      # Official attachments (tariff DB, DataWeb)
 ├── external_data/              # Extra data for Q1 (WITS China soybean imports)
+│   ├── wits/                   # WITS By-HS6Product (calendar year, tons/kg, USD)
+│   └── psd/                    # USDA PSD world balance (market year, thousand tons)
 ├── output/
 │   ├── external_cleaned/       # Cleaned external soybean data (model input)
 │   ├── prediction_results/     # Scenario & sensitivity outputs
@@ -14,11 +16,17 @@ Project for APMCM 2025 Problem C, Question 1. It cleans data, calibrates an Armi
 ├── wash/                       # Official-data cleaning pipeline (general use)
 │   └── output/                 # Clean panels from official attachments
 ├── process_external_data.py    # Clean WITS soybean data → external_cleaned
+├── process_psd_soy.py          # Clean PSD table → psd_soy_balance + industry impact table
 ├── model_q1.py                 # Armington model + scenarios + sensitivities
 ├── visualization.py            # Plots for historical & simulated results
 ├── generate_china_data.py      # Optional synthetic data generator
 └── README.md
 ```
+
+- Data sources & units:
+  - WITS: calendar-year China imports; quantities converted to tons, values USD; used directly as model baseline (`output/external_cleaned/china_soy_imports.csv`).
+  - PSD: USDA PSD world balance (market year, units likely thousand tons); cleaned to `output/external_cleaned/psd_soy_balance.csv`; used for industry-impact comparison, mind the unit when interpreting ratios.
+  - Official attachments (wash): US-side tariff/exports panels; not directly used by the model.
 
 ## How to Run (Q1 workflow)
 1) Clean external soybean data  
@@ -48,6 +56,14 @@ Writes to `output/images/`:
 - Share pies (`4_share_comparison_pie.png`)
 - Sensitivities (`5_sensitivity_sigma.png`, `6_sensitivity_eta.png`)
 
+4) (Optional) Clean PSD table and compare industry impact  
+```bash
+python process_psd_soy.py
+```
+Outputs:
+- `output/external_cleaned/psd_soy_balance.csv` (tidy PSD balance)
+- `output/prediction_results/industry_impact_psd_export_basis.csv` (Scenario 1 delta_q vs PSD exports; remember PSD exports are in thousand tons, model delta_q in tons—convert if computing ratios)
+
 4) (Optional) Clean official attachments for broader use  
 ```bash
 python wash/datawash.py
@@ -56,12 +72,13 @@ Produces general tariff/trade panels in `wash/output/` (not directly used by Q1 
 
 ## Model Assumptions (model_q1.py)
 - Base year: 2024; exporters: US, Brazil, Argentina.
-- Substitution elasticity σ = 4.0 (sensitivity 2–8).
-- Demand elasticity η = 0.8 (sensitivity 0.1–1.2).
+- Substitution elasticity σ = 3.0 (sensitivity 2–8).
+- Demand elasticity η = 0.5 (sensitivity 0.15–1.0).
 - Transport costs (USD/ton): US 20, Brazil 25, Argentina 23.
 - Tariffs in base data: US 28%, Brazil/Argentina 3%.
 - Scenario 1: +25 p.p. tariff on US only.  
   Scenario 2: Scenario 1 plus US FOB -10%, Brazil/Argentina FOB +5%.
+- Demand shock (total demand contraction) and supply caps/markups applied per scenario to avoid “infinite replacement” by Brazil/Argentina.
 
 ## Key Outputs
 - `output/external_cleaned/china_soy_imports.csv`: Cleaned baseline imports (2020–2024).

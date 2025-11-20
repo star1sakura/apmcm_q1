@@ -1,0 +1,313 @@
+metric,country,year,value
+Production,Brazil,2021/22,130500.0
+Production,United States,2021/22,121504.0
+Production,Argentina,2021/22,43900.0
+Production,China,2021/22,16395.0
+Production,Paraguay,2021/22,4183.0
+Production,India,2021/22,11889.0
+Production,Russia,2021/22,4760.0
+Production,Other,2021/22,27407.0
+Production,Total,2021/22,360538.0
+Imports,China,2021/22,90297.0
+Imports,European Union,2021/22,14545.0
+Imports,Argentina,2021/22,3839.0
+Imports,Mexico,2021/22,6397.0
+Imports,Egypt,2021/22,4566.0
+Imports,Thailand,2021/22,3243.0
+Imports,Turkey,2021/22,2949.0
+Imports,Japan,2021/22,3455.0
+Imports,Taiwan,2021/22,2622.0
+Imports,Vietnam,2021/22,1839.0
+Imports,Other,2021/22,21011.0
+Imports,Total,2021/22,154763.0
+Exports,Brazil,2021/22,79063.0
+Exports,United States,2021/22,58570.0
+Exports,Argentina,2021/22,2861.0
+Exports,Paraguay,2021/22,2273.0
+Exports,Canada,2021/22,4289.0
+Exports,Other,2021/22,7372.0
+Exports,Total,2021/22,154428.0
+Crush,China,2021/22,90000.0
+Crush,United States,2021/22,59980.0
+Crush,Brazil,2021/22,50767.0
+Crush,Argentina,2021/22,38825.0
+Crush,European Union,2021/22,15400.0
+Crush,India,2021/22,8500.0
+Crush,Mexico,2021/22,6350.0
+Crush,Russia,2021/22,4900.0
+Crush,Egypt,2021/22,4500.0
+Crush,Bolivia,2021/22,3100.0
+Crush,Paraguay,2021/22,2200.0
+Crush,Iran,2021/22,2500.0
+Crush,Thailand,2021/22,2500.0
+Crush,Ukraine,2021/22,1300.0
+Crush,Turkey,2021/22,1800.0
+Crush,Other,2021/22,23843.0
+Crush,Total,2021/22,316465.0
+Ending Stocks,China,2021/22,25146.0
+Ending Stocks,Brazil,2021/22,27386.0
+Ending Stocks,Argentina,2021/22,23691.0
+Ending Stocks,United States,2021/22,7468.0
+Ending Stocks,European Union,2021/22,1572.0
+Ending Stocks,Other,2021/22,8269.0
+Ending Stocks,Total,2021/22,93532.0
+Production,Brazil,2022/23,162000.0
+Production,United States,2022/23,116221.0
+Production,Argentina,2022/23,25000.0
+Production,China,2022/23,20284.0
+Production,Paraguay,2022/23,10250.0
+Production,India,2022/23,12411.0
+Production,Russia,2022/23,5996.0
+Production,Other,2022/23,26198.0
+Production,Total,2022/23,378360.0
+Imports,China,2022/23,104500.0
+Imports,European Union,2022/23,13127.0
+Imports,Argentina,2022/23,9059.0
+Imports,Mexico,2022/23,6451.0
+Imports,Egypt,2022/23,1992.0
+Imports,Thailand,2022/23,3238.0
+Imports,Turkey,2022/23,2888.0
+Imports,Japan,2022/23,3332.0
+Imports,Taiwan,2022/23,2559.0
+Imports,Vietnam,2022/23,1858.0
+Imports,Other,2022/23,19505.0
+Imports,Total,2022/23,168509.0
+Exports,Brazil,2022/23,95530.0
+Exports,United States,2022/23,53864.0
+Exports,Argentina,2022/23,4185.0
+Exports,Paraguay,2022/23,6495.0
+Exports,Canada,2022/23,4240.0
+Exports,Other,2022/23,7542.0
+Exports,Total,2022/23,171856.0
+Crush,China,2022/23,96000.0
+Crush,United States,2022/23,60199.0
+Crush,Brazil,2022/23,53409.0
+Crush,Argentina,2022/23,30318.0
+Crush,European Union,2022/23,14300.0
+Crush,India,2022/23,10300.0
+Crush,Mexico,2022/23,6650.0
+Crush,Russia,2022/23,5400.0
+Crush,Egypt,2022/23,2200.0
+Crush,Bolivia,2022/23,3300.0
+Crush,Paraguay,2022/23,3450.0
+Crush,Iran,2022/23,3000.0
+Crush,Thailand,2022/23,2100.0
+Crush,Ukraine,2022/23,1500.0
+Crush,Turkey,2022/23,1700.0
+Crush,Other,2022/23,21620.0
+Crush,Total,2022/23,315446.0
+Ending Stocks,China,2022/23,32340.0
+Ending Stocks,Brazil,2022/23,36801.0
+Ending Stocks,Argentina,2022/23,16997.0
+Ending Stocks,United States,2022/23,7190.0
+Ending Stocks,European Union,2022/23,1259.0
+Ending Stocks,Other,2022/23,7276.0
+Ending Stocks,Total,2022/23,101863.0
+Production,Brazil,2023/24,154500.0
+Production,United States,2023/24,113273.0
+Production,Argentina,2023/24,48210.0
+Production,China,2023/24,20840.0
+Production,Paraguay,2023/24,11000.0
+Production,India,2023/24,11875.0
+Production,Russia,2023/24,6800.0
+Production,Other,2023/24,29861.0
+Production,Total,2023/24,396359.0
+Imports,China,2023/24,112000.0
+Imports,European Union,2023/24,13461.0
+Imports,Argentina,2023/24,7787.0
+Imports,Mexico,2023/24,6456.0
+Imports,Egypt,2023/24,3177.0
+Imports,Thailand,2023/24,3428.0
+Imports,Turkey,2023/24,3252.0
+Imports,Japan,2023/24,3099.0
+Imports,Taiwan,2023/24,2577.0
+Imports,Vietnam,2023/24,2265.0
+Imports,Other,2023/24,20782.0
+Imports,Total,2023/24,178284.0
+Exports,Brazil,2023/24,104191.0
+Exports,United States,2023/24,46266.0
+Exports,Argentina,2023/24,5114.0
+Exports,Paraguay,2023/24,7987.0
+Exports,Canada,2023/24,4850.0
+Exports,Other,2023/24,9426.0
+Exports,Total,2023/24,177834.0
+Crush,China,2023/24,99000.0
+Crush,United States,2023/24,62196.0
+Crush,Brazil,2023/24,54405.0
+Crush,Argentina,2023/24,36583.0
+Crush,European Union,2023/24,14500.0
+Crush,India,2023/24,11300.0
+Crush,Mexico,2023/24,6530.0
+Crush,Russia,2023/24,5900.0
+Crush,Egypt,2023/24,3125.0
+Crush,Bolivia,2023/24,2600.0
+Crush,Paraguay,2023/24,3000.0
+Crush,Iran,2023/24,2700.0
+Crush,Thailand,2023/24,2400.0
+Crush,Ukraine,2023/24,1800.0
+Crush,Turkey,2023/24,2300.0
+Crush,Other,2023/24,22850.0
+Crush,Total,2023/24,331189.0
+Ending Stocks,China,2023/24,43310.0
+Ending Stocks,Brazil,2023/24,29722.0
+Ending Stocks,Argentina,2023/24,24047.0
+Ending Stocks,United States,2023/24,9319.0
+Ending Stocks,European Union,2023/24,1283.0
+Ending Stocks,Other,2023/24,7440.0
+Ending Stocks,Total,2023/24,115121.0
+Production,Brazil,2024/25,171500.0
+Production,United States,2024/25,119047.0
+Production,Argentina,2024/25,51108.0
+Production,China,2024/25,20650.0
+Production,Paraguay,2024/25,10200.0
+Production,India,2024/25,12582.0
+Production,Russia,2024/25,7050.0
+Production,Other,2024/25,34999.0
+Production,Total,2024/25,427136.0
+Imports,China,2024/25,108000.0
+Imports,European Union,2024/25,14600.0
+Imports,Argentina,2024/25,6324.0
+Imports,Mexico,2024/25,6400.0
+Imports,Egypt,2024/25,4500.0
+Imports,Thailand,2024/25,4190.0
+Imports,Turkey,2024/25,4183.0
+Imports,Japan,2024/25,3243.0
+Imports,Taiwan,2024/25,2768.0
+Imports,Vietnam,2024/25,2500.0
+Imports,Other,2024/25,22431.0
+Imports,Total,2024/25,179139.0
+Exports,Brazil,2024/25,103143.0
+Exports,United States,2024/25,51029.0
+Exports,Argentina,2024/25,7868.0
+Exports,Paraguay,2024/25,6800.0
+Exports,Canada,2024/25,5448.0
+Exports,Other,2024/25,10728.0
+Exports,Total,2024/25,185016.0
+Crush,China,2024/25,103500.0
+Crush,United States,2024/25,66542.0
+Crush,Brazil,2024/25,58000.0
+Crush,Argentina,2024/25,43209.0
+Crush,European Union,2024/25,15400.0
+Crush,India,2024/25,11000.0
+Crush,Mexico,2024/25,6650.0
+Crush,Russia,2024/25,6225.0
+Crush,Egypt,2024/25,4350.0
+Crush,Bolivia,2024/25,3100.0
+Crush,Paraguay,2024/25,3100.0
+Crush,Iran,2024/25,2850.0
+Crush,Thailand,2024/25,2700.0
+Crush,Ukraine,2024/25,2800.0
+Crush,Turkey,2024/25,2850.0
+Crush,Other,2024/25,25515.0
+Crush,Total,2024/25,357791.0
+Ending Stocks,China,2024/25,44488.0
+Ending Stocks,Brazil,2024/25,36811.0
+Ending Stocks,Argentina,2024/25,23102.0
+Ending Stocks,United States,2024/25,8614.0
+Ending Stocks,European Union,2024/25,1543.0
+Ending Stocks,Other,2024/25,8781.0
+Ending Stocks,Total,2024/25,123339.0
+Production,Brazil,Sep 2025/26,175000.0
+Production,United States,Sep 2025/26,117045.0
+Production,Argentina,Sep 2025/26,48500.0
+Production,China,Sep 2025/26,21000.0
+Production,Paraguay,Sep 2025/26,11000.0
+Production,India,Sep 2025/26,11600.0
+Production,Russia,Sep 2025/26,8300.0
+Production,Other,Sep 2025/26,33422.0
+Production,Total,Sep 2025/26,425867.0
+Imports,China,Sep 2025/26,112000.0
+Imports,European Union,Sep 2025/26,14300.0
+Imports,Argentina,Sep 2025/26,7200.0
+Imports,Mexico,Sep 2025/26,6700.0
+Imports,Egypt,Sep 2025/26,4700.0
+Imports,Thailand,Sep 2025/26,4400.0
+Imports,Turkey,Sep 2025/26,3850.0
+Imports,Japan,Sep 2025/26,3300.0
+Imports,Taiwan,Sep 2025/26,2950.0
+Imports,Vietnam,Sep 2025/26,2800.0
+Imports,Other,Sep 2025/26,24014.0
+Imports,Total,Sep 2025/26,186214.0
+Exports,Brazil,Sep 2025/26,112000.0
+Exports,United States,Sep 2025/26,45858.0
+Exports,Argentina,Sep 2025/26,6000.0
+Exports,Paraguay,Sep 2025/26,7700.0
+Exports,Canada,Sep 2025/26,5100.0
+Exports,Other,Sep 2025/26,11124.0
+Exports,Total,Sep 2025/26,187782.0
+Crush,China,Sep 2025/26,108000.0
+Crush,United States,Sep 2025/26,69536.0
+Crush,Brazil,Sep 2025/26,58000.0
+Crush,Argentina,Sep 2025/26,42400.0
+Crush,European Union,Sep 2025/26,15300.0
+Crush,India,Sep 2025/26,10250.0
+Crush,Mexico,Sep 2025/26,6800.0
+Crush,Russia,Sep 2025/26,6300.0
+Crush,Egypt,Sep 2025/26,4700.0
+Crush,Bolivia,Sep 2025/26,3100.0
+Crush,Paraguay,Sep 2025/26,3100.0
+Crush,Iran,Sep 2025/26,3000.0
+Crush,Thailand,Sep 2025/26,3200.0
+Crush,Ukraine,Sep 2025/26,2900.0
+Crush,Turkey,Sep 2025/26,2500.0
+Crush,Other,Sep 2025/26,27543.0
+Crush,Total,Sep 2025/26,366629.0
+Ending Stocks,China,Sep 2025/26,43380.0
+Ending Stocks,Brazil,Sep 2025/26,37261.0
+Ending Stocks,Argentina,Sep 2025/26,23847.0
+Ending Stocks,United States,Sep 2025/26,8168.0
+Ending Stocks,European Union,Sep 2025/26,1830.0
+Ending Stocks,Other,Sep 2025/26,9505.0
+Ending Stocks,Total,Sep 2025/26,123991.0
+Production,Brazil,Nov 2025/26,175000.0
+Production,United States,Nov 2025/26,115751.0
+Production,Argentina,Nov 2025/26,48500.0
+Production,China,Nov 2025/26,21000.0
+Production,Paraguay,Nov 2025/26,11000.0
+Production,India,Nov 2025/26,10000.0
+Production,Russia,Nov 2025/26,8300.0
+Production,Other,Nov 2025/26,32197.0
+Production,Total,Nov 2025/26,421748.0
+Imports,China,Nov 2025/26,112000.0
+Imports,European Union,Nov 2025/26,14300.0
+Imports,Argentina,Nov 2025/26,7700.0
+Imports,Mexico,Nov 2025/26,6700.0
+Imports,Egypt,Nov 2025/26,4700.0
+Imports,Thailand,Nov 2025/26,4200.0
+Imports,Turkey,Nov 2025/26,4000.0
+Imports,Japan,Nov 2025/26,3300.0
+Imports,Taiwan,Nov 2025/26,2950.0
+Imports,Vietnam,Nov 2025/26,2800.0
+Imports,Other,Nov 2025/26,23764.0
+Imports,Total,Nov 2025/26,186414.0
+Exports,Brazil,Nov 2025/26,112500.0
+Exports,United States,Nov 2025/26,44497.0
+Exports,Argentina,Nov 2025/26,8250.0
+Exports,Paraguay,Nov 2025/26,7700.0
+Exports,Canada,Nov 2025/26,5100.0
+Exports,Other,Nov 2025/26,9924.0
+Exports,Total,Nov 2025/26,187971.0
+Crush,China,Nov 2025/26,108000.0
+Crush,United States,Nov 2025/26,69536.0
+Crush,Brazil,Nov 2025/26,59000.0
+Crush,Argentina,Nov 2025/26,41000.0
+Crush,European Union,Nov 2025/26,15300.0
+Crush,India,Nov 2025/26,9050.0
+Crush,Mexico,Nov 2025/26,6800.0
+Crush,Russia,Nov 2025/26,6300.0
+Crush,Egypt,Nov 2025/26,4700.0
+Crush,Bolivia,Nov 2025/26,3100.0
+Crush,Paraguay,Nov 2025/26,3100.0
+Crush,Iran,Nov 2025/26,3000.0
+Crush,Thailand,Nov 2025/26,3000.0
+Crush,Ukraine,Nov 2025/26,2900.0
+Crush,Turkey,Nov 2025/26,2800.0
+Crush,Other,Nov 2025/26,27393.0
+Crush,Total,Nov 2025/26,364979.0
+Ending Stocks,China,Nov 2025/26,44388.0
+Ending Stocks,Brazil,Nov 2025/26,36361.0
+Ending Stocks,Argentina,Nov 2025/26,22852.0
+Ending Stocks,United States,Nov 2025/26,7885.0
+Ending Stocks,European Union,Nov 2025/26,1508.0
+Ending Stocks,Other,Nov 2025/26,8997.0
+Ending Stocks,Total,Nov 2025/26,121991.0
