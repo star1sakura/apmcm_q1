@@ -87,6 +87,11 @@ def simulate_scenario_for_china(params, scenario):
     transport_cost = params["transport_cost"]
     tariff0_i = params["tariff0_i"]
 
+    # Optional overall demand shock (e.g., policy tightening): percentage change to total demand
+    demand_shock = scenario.get("demand_shock", 0.0)
+    # Optional supply caps / elastic supply markups: {"US": {"q_cap": 2.5e7, "markup": 0.05}, ...}
+    supply_caps = scenario.get("supply_caps", {})
+
     records = []
     for exp in EXPORTERS:
         base_tariff = tariff0_i[exp]
@@ -117,37 +122,35 @@ def simulate_scenario_for_china(params, scenario):
 
     df = pd.DataFrame(records)
 
-    # New Price Index
-    tmp = (df["alpha"] * (df["cif_price_new"] ** (1 - sigma))).sum()
-    P_new = tmp ** (1 / (1 - sigma))
+    # Helper to compute allocation given current prices
+    def compute_allocation(df_prices):
+        tmp = (df_prices["alpha"] * (df_prices["cif_price_new"] ** (1 - sigma))).sum()
+        P_new = tmp ** (1 / (1 - sigma))
+        Q_new = A_C * (P_new ** (-eta))
+        Q_new = Q_new * (1 + demand_shock)
+        numerator = df_prices["alpha"] * (df_prices["cif_price_new"] ** (1 - sigma))
+        df_prices["share_new"] = numerator / numerator.sum()
+        total_expenditure = P_new * Q_new
+        df_prices["q_new"] = (df_prices["share_new"] * total_expenditure) / df_prices["cif_price_new"]
+        return df_prices, P_new, Q_new
 
-    # New Total Demand
-    Q_new = A_C * (P_new ** (-eta))
+    df["alpha"] = df["exporter"].map(alpha_i)
+    df, P_new, Q_new = compute_allocation(df.copy())
 
-    # New Shares
-    # s_i = alpha_i * (p_i / P)^(1-sigma)
-    #     = alpha_i * p_i^(1-sigma) * P^(sigma-1)
-    numerator = df["alpha"] * (df["cif_price_new"] ** (1 - sigma))
-    
-    # DEBUG
-    # print("\n--- DEBUG ---")
-    # print(df[["exporter", "tariff_new", "p_fob_new", "cif_price_new"]])
-    # print("Numerator:", numerator)
-    # END DEBUG
+    # If supply caps are defined and q_new exceeds cap, increase price via markup and recompute once
+    price_adjusted = False
+    for idx, row in df.iterrows():
+        exp = row["exporter"]
+        cap_info = supply_caps.get(exp, {})
+        q_cap = cap_info.get("q_cap")
+        markup = cap_info.get("markup", 0.0)
+        if q_cap is not None and row["q_new"] > q_cap and markup > 0:
+            over_ratio = (row["q_new"] - q_cap) / q_cap
+            df.at[idx, "cif_price_new"] *= (1 + over_ratio * markup)
+            price_adjusted = True
 
-    denominator = numerator.sum()
-    df["share_new"] = numerator / denominator
-
-    # DEBUG PRINT
-    # print("\n--- DEBUG SIMULATION ---")
-    # print(df[["exporter", "tariff_new", "p_fob_new", "cif_price_new", "share_new"]])
-    # ------------------------
-
-    # New Quantities
-    # share_new is Value Share (s_i = p_i q_i / P Q)
-    # So q_i = (s_i * P * Q) / p_i
-    total_expenditure = P_new * Q_new
-    df["q_new"] = (df["share_new"] * total_expenditure) / df["cif_price_new"]
+    if price_adjusted:
+        df, P_new, Q_new = compute_allocation(df.copy())
     
     # New Export Values (FOB basis)
     df["V_new"] = df["q_new"] * df["p_fob_new"]
@@ -170,9 +173,9 @@ def main():
     china_imports = load_china_soy_imports(china_imports_path)
     
     # 2. Calibrate
-    # Assumptions
-    sigma = 4.0 # Substitution elasticity
-    eta = 0.8   # Demand elasticity (higher to dampen total demand when prices rise)
+    # Assumptions (aligned to literature ranges: supply-price elasticity around 0.7-1.2, demand-price elasticity 0.3-0.8)
+    sigma = 3.0 # Substitution elasticity (moderate)
+    eta = 0.5   # Demand elasticity (mid in 0.3-0.8 band; short-run low-end 0.15 tested in sensitivity)
     transport_costs = {"US": 20.0, "Brazil": 25.0, "Argentina": 23.0}
     
     print(f"Calibrating model to Base Year: {BASE_YEAR}")
@@ -186,10 +189,14 @@ def main():
     
     # 3. Define Scenarios
     # Scenario 1: China Retaliates against US (+25% tariff on US Soy)
-    # US "Reciprocal Tariff" policy triggers this.
-    # Assume Brazil/Argentina tariffs stay same.
-    
+    # Add demand contraction and simple supply caps to reflect finite replacement capacity.
     scenario_1 = {
+        "demand_shock": -0.08,  # overall demand contraction (e.g., tighter policy/uncertainty)
+        "supply_caps": {
+            "Brazil": {"q_cap": params["q0_i"]["Brazil"] * 1.15, "markup": 0.10},  # 15% headroom, 10% markup if exceeded
+            "Argentina": {"q_cap": params["q0_i"]["Argentina"] * 1.15, "markup": 0.10},
+            # US cap omitted; tariff already curtails demand
+        },
         "US": {"delta_tariff": 0.25},
         "Brazil": {"delta_tariff": 0.0},
         "Argentina": {"delta_tariff": 0.0}
@@ -255,8 +262,13 @@ def main():
 
     # Scenario 2: US Price drops due to glut, Brazil Price rises due to demand
     # US Price -10%, Brazil/Arg Price +5%
-    # Plus the tariff
+    # Scenario 2: Tariff + Price Effects, softer demand shock
     scenario_2 = {
+        "demand_shock": -0.05,  # lighter contraction when US cuts price
+        "supply_caps": {
+            "Brazil": {"q_cap": params["q0_i"]["Brazil"] * 1.10, "markup": 0.08},
+            "Argentina": {"q_cap": params["q0_i"]["Argentina"] * 1.10, "markup": 0.08},
+        },
         "US": {
             "delta_tariff": 0.25,
             "new_p_fob": params["p0_i"]["US"] * 0.90
@@ -306,7 +318,7 @@ def main():
 
     # 5. Sensitivity Analysis (Eta - Demand Elasticity)
     print("\nRunning Sensitivity Analysis on Eta (Demand Elasticity)...")
-    etas = [0.1, 0.3, 0.5, 0.8, 1.0, 1.2]
+    etas = [0.15, 0.3, 0.5, 0.8, 1.0]
     eta_records = []
     for e in etas:
         # Recalibrate with current eta and baseline sigma

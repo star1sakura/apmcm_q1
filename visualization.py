@@ -21,6 +21,8 @@ plt.rcParams['axes.unicode_minus'] = False
 def plot_historical_trends():
     print("Generating historical trend charts...")
     df = pd.read_csv(DATA_DIR / "china_soy_imports.csv")
+    df = df.sort_values(["year", "exporter"])
+    year_min, year_max = int(df["year"].min()), int(df["year"].max())
     
     # 1. Quantity Trend (Line Chart)
     plt.figure(figsize=(10, 6))
@@ -28,18 +30,21 @@ def plot_historical_trends():
     plt.title("2020-2024 China Soybean Import Quantity by Source")
     plt.ylabel("Quantity (Tons)")
     plt.xlabel("Year")
+    plt.xlim(year_min - 0.2, year_max + 0.2)
+    plt.xticks(range(year_min, year_max + 1))
     plt.grid(True, linestyle='--', alpha=0.7)
     plt.savefig(IMG_DIR / "1_historical_quantity_trend.png", dpi=300, bbox_inches='tight')
     plt.close()
 
     # 2. Market Share Trend (Stacked Bar Chart)
-    df_pivot = df.pivot(index="year", columns="exporter", values="quantity_tons")
+    df_pivot = df.pivot(index="year", columns="exporter", values="quantity_tons").sort_index()
     df_share = df_pivot.div(df_pivot.sum(axis=1), axis=0)
     
     df_share.plot(kind='bar', stacked=True, figsize=(10, 6), colormap='viridis', alpha=0.85)
     plt.title("2020-2024 China Soybean Import Market Share Structure")
     plt.ylabel("Market Share")
     plt.xlabel("Year")
+    plt.xlim(-0.6, len(df_share.index) - 0.4)
     plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
     plt.xticks(rotation=0)
     plt.tight_layout()
