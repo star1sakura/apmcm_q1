@@ -1,9 +1,10 @@
 import pandas as pd
 from pathlib import Path
 
-# Configuration
-DATA_DIR = Path(r"c:\competition\亚太杯\q1\external_data")
-OUTPUT_DIR = Path(r"c:\competition\亚太杯\q1\output\cleaned_data")
+# Paths (relative to repo root)
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "external_data"
+OUTPUT_DIR = BASE_DIR / "output" / "external_cleaned"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_FILE = OUTPUT_DIR / "china_soy_imports.csv"
 

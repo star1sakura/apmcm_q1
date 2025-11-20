@@ -5,9 +5,10 @@ from pathlib import Path
 import matplotlib.font_manager as fm
 
 # Configuration
-DATA_DIR = Path(r"c:\competition\亚太杯\q1\output\cleaned_data")
-PRED_DIR = Path(r"c:\competition\亚太杯\q1\output\prediction_results")
-IMG_DIR = Path(r"c:\competition\亚太杯\q1\output\images")
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "output" / "external_cleaned"
+PRED_DIR = BASE_DIR / "output" / "prediction_results"
+IMG_DIR = BASE_DIR / "output" / "images"
 IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Set style and font

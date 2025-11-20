@@ -3,9 +3,10 @@ import numpy as np
 from pathlib import Path
 
 # Configuration
-OUTPUT_DIR = Path(r"c:\competition\亚太杯\q1\output\prediction_results")
+BASE_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = BASE_DIR / "output" / "prediction_results"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-DATA_DIR = Path(r"c:\competition\亚太杯\q1\output\cleaned_data") # Use the processed data
+DATA_DIR = BASE_DIR / "output" / "external_cleaned"  # Processed external soybean data
 
 EXPORTERS = ["US", "Brazil", "Argentina"]
 BASE_YEAR = 2024
@@ -204,6 +205,53 @@ def main():
     # Save results
     res1.to_csv(OUTPUT_DIR / "prediction_results_scenario1.csv", index=False)
     print(f"\nResults saved to {OUTPUT_DIR / 'prediction_results_scenario1.csv'}")
+
+    # --- Supply Chain Vulnerability Analysis ---
+    print("\n--- Supply Chain Vulnerability Analysis (Scenario 1) ---")
+    
+    # 1. Import Volume Loss
+    total_q0 = res1["q0"].sum()
+    total_q_new = res1["q_new"].sum()
+    vul_q = (total_q0 - total_q_new) / total_q0
+    
+    # 2. Price Increase (Weighted Average CIF Price)
+    # Reconstruct Base CIF Prices: cif_0 = (p_fob + transport) * (1 + tariff)
+    cif_0_list = []
+    for exp in res1["exporter"]:
+        p_fob = params["p0_i"][exp]
+        tau = params["transport_cost"].get(exp, 0.0)
+        t0 = params["tariff0_i"][exp]
+        cif = (p_fob + tau) * (1 + t0)
+        cif_0_list.append(cif)
+    
+    res1["cif_price_0"] = cif_0_list
+    
+    # Weighted Averages
+    avg_p0 = (res1["cif_price_0"] * res1["q0"]).sum() / total_q0
+    avg_p_new = (res1["cif_price_new"] * res1["q_new"]).sum() / total_q_new
+    
+    vul_p = (avg_p_new - avg_p0) / avg_p0
+    
+    print(f"Baseline Total Import: {total_q0/1e6:.2f} Million Tons")
+    print(f"Scenario Total Import: {total_q_new/1e6:.2f} Million Tons")
+    print(f"Import Volume Loss (Vul_Q): {vul_q:.2%}")
+    
+    print(f"Baseline Avg CIF Price: ${avg_p0:.2f}/Ton")
+    print(f"Scenario Avg CIF Price: ${avg_p_new:.2f}/Ton")
+    print(f"Price Increase (Vul_P): {vul_p:.2%}")
+    
+    # Save to text file
+    with open(OUTPUT_DIR / "vulnerability_report.txt", "w", encoding="utf-8") as f:
+        f.write("Supply Chain Vulnerability Analysis (Scenario 1)\n")
+        f.write("================================================\n")
+        f.write(f"Import Volume Loss (Vul_Q): {vul_q:.4f} ({vul_q:.2%})\n")
+        f.write(f"Price Increase (Vul_P):     {vul_p:.4f} ({vul_p:.2%})\n\n")
+        f.write("Details:\n")
+        f.write(f"Baseline Total Import: {total_q0:,.2f} Tons\n")
+        f.write(f"Scenario Total Import: {total_q_new:,.2f} Tons\n")
+        f.write(f"Baseline Avg Price:    ${avg_p0:.2f}\n")
+        f.write(f"Scenario Avg Price:    ${avg_p_new:.2f}\n")
+    print(f"Vulnerability report saved to {OUTPUT_DIR / 'vulnerability_report.txt'}")
 
     # Scenario 2: US Price drops due to glut, Brazil Price rises due to demand
     # US Price -10%, Brazil/Arg Price +5%
