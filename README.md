@@ -1,16 +1,16 @@
 # 2025 APMCM Problem C — Question 1 (Soybean Tariff Shock)
 
-Project for APMCM 2025 Problem C, Question 1. It cleans data, calibrates an Armington/CES model for China’s soybean imports from the US/Brazil/Argentina, simulates tariff/price shocks, and visualizes results.
+Project for APMCM 2025 Problem C, Q1. It cleans data, calibrates an Armington/CES model for China’s soybean imports from the US/Brazil/Argentina, simulates tariff/price shocks, and visualizes results.
 
 ## Project Layout
 ```
 .
 ├── 2025 APMCM Problems C/      # Official attachments (tariff DB, DataWeb)
-├── external_data/              # Extra data for Q1 (WITS China soybean imports)
-│   ├── wits/                   # WITS By-HS6Product (calendar year, tons/kg, USD)
+├── external_data/
+│   ├── wits/                   # WITS By-HS6Product (calendar year, tons, USD)
 │   └── psd/                    # USDA PSD world balance (market year, thousand tons)
 ├── output/
-│   ├── external_cleaned/       # Cleaned external soybean data (model input)
+│   ├── external_cleaned/       # Model input and cleaned external data
 │   ├── prediction_results/     # Scenario & sensitivity outputs
 │   └── images/                 # Plots
 ├── wash/                       # Official-data cleaning pipeline (general use)
@@ -24,16 +24,23 @@ Project for APMCM 2025 Problem C, Question 1. It cleans data, calibrates an Armi
 ```
 
 - Data sources & units:
-  - WITS: calendar-year China imports; quantities converted to tons, values USD; used directly as model baseline (`output/external_cleaned/china_soy_imports.csv`).
-  - PSD: USDA PSD world balance (market year, units likely thousand tons); cleaned to `output/external_cleaned/psd_soy_balance.csv`; used for industry-impact comparison, mind the unit when interpreting ratios.
-  - Official attachments (wash): US-side tariff/exports panels; not directly used by the model.
+  - WITS (external): calendar-year China imports; converted to tons/USD; used as model baseline (`output/external_cleaned/china_soy_imports.csv`).
+- PSD (USDA): world balance, market year, values in thousand tons; cleaned to `output/external_cleaned/psd_soy_balance.csv`; used for industry-impact comparison (convert units when comparing to model outputs).
+- Official attachments (wash): US-side tariff/exports panels; not directly used by the model.
+```text
+Assumption sources (external):
+- Tariffs: MFN 3% for soybeans; 2018 retaliation +25 p.p.; recent 10% surcharge on US soy (soygrowers, Reuters).
+- Freight/logistics: US≈55, AR≈79, BR≈103 USD/ton (Datamar/ERS logistics comparisons; US lowest, BR highest).
+- Supply capacity caps: recent export tops ~60Mt (US), ~95Mt (BR), <8Mt raw beans (AR) from USDA/ERS/farmdoc reports.
+- Elasticities: demand |η|<1 (e.g., -0.61 short run); substitution 0.7–1.5 range (Armington/EDM studies).
+```
 
 ## How to Run (Q1 workflow)
 1) Clean external soybean data  
 ```bash
 python process_external_data.py
 ```
-Reads `external_data/*.xlsx` (WITS By-HS6Product), keeps US/Brazil/Argentina, computes tons/FOB/tariff, writes `output/external_cleaned/china_soy_imports.csv`.
+Reads `external_data/wits/*.xlsx` (WITS By-HS6Product), keeps US/Brazil/Argentina, computes tons/FOB/tariff, writes `output/external_cleaned/china_soy_imports.csv`.
 
 2) Run model (calibration + scenarios + sensitivity)  
 ```bash
@@ -61,36 +68,36 @@ Writes to `output/images/`:
 python process_psd_soy.py
 ```
 Outputs:
-- `output/external_cleaned/psd_soy_balance.csv` (tidy PSD balance)
-- `output/prediction_results/industry_impact_psd_export_basis.csv` (Scenario 1 delta_q vs PSD exports; remember PSD exports are in thousand tons, model delta_q in tons—convert if computing ratios)
+- `output/external_cleaned/psd_soy_balance.csv`
+- `output/prediction_results/industry_impact_psd_export_basis.csv` (scenario 1 delta_q vs PSD exports; PSD in thousand tons, model in tons → convert when interpreting ratios)
 
-4) (Optional) Clean official attachments for broader use  
+5) (Optional) Clean official attachments for broader use  
 ```bash
 python wash/datawash.py
 ```
-Produces general tariff/trade panels in `wash/output/` (not directly used by Q1 model but useful for other questions).
 
 ## Model Assumptions (model_q1.py)
 - Base year: 2024; exporters: US, Brazil, Argentina.
 - Substitution elasticity σ = 3.0 (sensitivity 2–8).
 - Demand elasticity η = 0.5 (sensitivity 0.15–1.0).
-- Transport costs (USD/ton): US 20, Brazil 25, Argentina 23.
-- Tariffs in base data: US 28%, Brazil/Argentina 3%.
+- Transport costs (USD/ton): US 55, Brazil 103, Argentina 79 (aligned to reported logistics order).
+- Tariffs in base data: US 13% (3% MFN + 10% surcharge), Brazil/Argentina 3%.
 - Scenario 1: +25 p.p. tariff on US only.  
   Scenario 2: Scenario 1 plus US FOB -10%, Brazil/Argentina FOB +5%.
-- Demand shock (total demand contraction) and supply caps/markups applied per scenario to avoid “infinite replacement” by Brazil/Argentina.
+- Supply caps/markups (tons) to avoid “infinite replacement”: US 60M, Brazil 95M, Argentina 8M. No extra demand shock applied (price/elasticity drive demand response).
 
 ## Key Outputs
-- `output/external_cleaned/china_soy_imports.csv`: Cleaned baseline imports (2020–2024).
-- `output/prediction_results/prediction_results_scenario1.csv`/`scenario2.csv`: q0/q_new, delta_q, pct_change, share_new, V_new.
+- `output/external_cleaned/china_soy_imports.csv`: Cleaned baseline imports (2015–2024 WITS).
+- `output/prediction_results/prediction_results_scenario1.csv` / `scenario2.csv`: q0/q_new, delta_q, pct_change, share_new, V_new.
 - `output/prediction_results/sensitivity_analysis_sigma.csv`: US response vs σ.
 - `output/prediction_results/sensitivity_analysis_eta.csv`: Total and US response vs η.
 - `output/prediction_results/vulnerability_report.txt`: Aggregate volume/price shifts (Scenario 1).
-- `output/images/*.png`: All plots for reporting.
+- `output/prediction_results/industry_impact_psd_export_basis.csv`: Scenario 1 delta_q vs PSD exports (unit-aware).
+- `output/images/*.png`: All plots.
 
 ## Dependencies
 - pandas, numpy, openpyxl, matplotlib, seaborn
 
 ## Notes
-- The Q1 model currently uses external WITS data for China’s soybean imports; official attachment panels are available via `wash/` if you need an all-official-data pipeline.
-- If overall import rises under tariffs and you prefer a demand contraction, raise η or increase the price/tariff shock in the scenarios.***
+- Model uses external WITS data; wash outputs are available if you build an all-official pipeline.
+- When comparing to PSD (thousand tons, market year), convert units and mind year definitions.***

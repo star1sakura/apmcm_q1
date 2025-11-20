@@ -190,9 +190,9 @@ def main():
     
     # 3. Define Scenarios
     # Scenario 1: China Retaliates against US (+25% tariff on US Soy)
-    # Add demand contraction and simple supply caps to reflect finite replacement capacity.
+    # Supply caps reflect rough export capacity (million-ton scale from literature).
     scenario_1 = {
-        "demand_shock": -0.08,  # overall demand contraction (e.g., tighter policy/uncertainty)
+        "demand_shock": 0.0,  # no additional total-demand shock (rely on price response)
         "supply_caps": {
             # Caps based on plausible export ceilings (thousand tons -> converted to tons)
             "Brazil": {"q_cap": 95_000_000, "markup": 0.10},
@@ -266,7 +266,7 @@ def main():
     # US Price -10%, Brazil/Arg Price +5%
     # Scenario 2: Tariff + Price Effects, softer demand shock
     scenario_2 = {
-        "demand_shock": -0.05,  # lighter contraction when US cuts price
+        "demand_shock": 0.0,  # no extra contraction; price effects drive demand
         "supply_caps": {
             "Brazil": {"q_cap": 95_000_000, "markup": 0.08},
             "Argentina": {"q_cap": 8_000_000, "markup": 0.08},
